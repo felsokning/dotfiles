@@ -1,43 +1,54 @@
+import Control.Monad (liftM2)
 import System.IO
 import System.Exit
 
+import Graphics.X11.ExtraTypes.XF86
+
 import XMonad
-import XMonad.Hooks.SetWMName
+
+-- Actions
+import XMonad.Actions.CycleWS
+import XMonad.Actions.Minimize
+import XMonad.Actions.SpawnOn
+
+-- Hooks
 import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.EwmhDesktops
+import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers(doFullFloat, doCenterFloat, isFullscreen, isDialog)
+import XMonad.Hooks.Minimize
+import XMonad.Hooks.SetWMName
+import XMonad.Hooks.UrgencyHook
+
+-- Config
 import XMonad.Config.Desktop
 import XMonad.Config.Azerty
-import XMonad.Util.Run(spawnPipe)
-import XMonad.Actions.SpawnOn
-import XMonad.Util.EZConfig (additionalKeys, additionalMouseBindings)
-import XMonad.Actions.CycleWS
-import XMonad.Hooks.UrgencyHook
-import qualified Codec.Binary.UTF8.String as UTF8
 
-import XMonad.Layout.Spacing
-import XMonad.Layout.Gaps
-import XMonad.Layout.ResizableTile
----import XMonad.Layout.NoBorders
+-- Layout
+import XMonad.Layout.CenteredMaster(centerMaster)
 import XMonad.Layout.Fullscreen (fullscreenFull)
-import XMonad.Layout.Cross(simpleCross)
-import XMonad.Layout.Spiral(spiral)
-import XMonad.Layout.ThreeColumns
+import XMonad.Layout.Gaps
+import XMonad.Layout.IndependentScreens
+import XMonad.Layout.Minimize
 import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
-import XMonad.Layout.IndependentScreens
+import XMonad.Layout.ResizableTile
+import XMonad.Layout.Spacing
+import XMonad.Layout.Spiral(spiral)
+import XMonad.Layout.ThreeColumns
 
+-- Util
+import XMonad.Util.Run(spawnPipe)
+import XMonad.Util.EZConfig (additionalKeys, additionalMouseBindings)
 
-import XMonad.Layout.CenteredMaster(centerMaster)
-
-import Graphics.X11.ExtraTypes.XF86
-import qualified XMonad.StackSet as W
+-- Qualifies
+import qualified Codec.Binary.UTF8.String as UTF8
 import qualified Data.Map as M
 import qualified Data.ByteString as B
-import Control.Monad (liftM2)
 import qualified DBus as D
 import qualified DBus.Client as D
+import qualified XMonad.Layout.BoringWindows as BW
+import qualified XMonad.StackSet as W
 
 
 myStartupHook = do
@@ -104,7 +115,7 @@ myManageHook = composeAll . concat $
 
 
 
-myLayout = spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| spiral (6/7)  ||| ThreeColMid 1 (3/100) (1/2) ||| Full
+myLayout = minimize . BW.boringWindows $ spacingRaw True (Border 0 5 5 5) True (Border 5 5 5 5) True $ avoidStruts $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) $ tiled ||| Mirror tiled ||| spiral (6/7)  ||| ThreeColMid 1 (3/100) (1/2) ||| Full
     where
         tiled = Tall nmaster delta tiled_ratio
         nmaster = 1
@@ -132,19 +143,23 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   ----------------------------------------------------------------------
   -- SUPER + FUNCTION KEYS
 
-  [ ((modMask, xK_e), spawn $ "atom" )
-  , ((modMask, xK_c), spawn $ "conky-toggle" )
-  , ((modMask, xK_f), spawn $ "caja")
+  [((modMask, xK_c), spawn $ "conky-toggle")
+  , ((modMask, xK_d ), spawn $ "~/.xmonad/launcher/launcher.sh")
+  , ((modMask, xK_e), spawn $ "caja")
+  , ((modMask, xK_f), spawn $ "firefox")
   --, ((modMask, xK_f), sendMessage $ Toggle NBFULL)
-  , ((modMask, xK_h), spawn $ "urxvt 'htop task manager' -e htop" )
-  , ((modMask, xK_m), spawn $ "lollypop" )
-  , ((modMask, xK_q), kill )
-  , ((modMask, xK_r), spawn $ "rofi-theme-selector" )
+  , ((modMask, xK_h), spawn $ "urxvt 'htop task manager' -e htop")
+  --, ((modMask, xK_m), spawn $ "lollypop" )
+  , ((modMask, xK_m), withFocused minimizeWindow)
+  , ((modMask .|. shiftMask, xK_m), withLastMinimized maximizeWindow)
+  , ((modMask, xK_q), kill)
+  , ((modMask, xK_r), spawn $ "rofi-theme-selector")
+  , ((modMask, xK_b), spawn $ "shortwave")
   , ((modMask, xK_t), spawn $ "urxvt" )
   , ((modMask, xK_v), spawn $ "pavucontrol" )
   , ((modMask, xK_y), spawn $ "polybar-msg cmd toggle" )
   , ((modMask, xK_x), spawn $ "archlinux-logout" )
-  , ((modMask, xK_Escape), spawn $ "xkill" )
+  , ((modMask, xK_Escape), spawn $ "xkill")
   , ((modMask, xK_Return), spawn $ "alacritty" )
   , ((modMask, xK_F1), spawn $ "vivaldi-stable" )
   , ((modMask, xK_F2), spawn $ "atom" )
@@ -166,7 +181,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
 
   , ((modMask .|. shiftMask , xK_Return ), spawn $ "thunar")
   , ((modMask .|. shiftMask , xK_d ), spawn $ "dmenu_run -i -nb '#191919' -nf '#fea63c' -sb '#fea63c' -sf '#191919' -fn 'NotoMonoRegular:bold:pixelsize=14'")
-  , ((modMask, xK_d ), spawn $ "~/.xmonad/launcher/launcher.sh")
   , ((modMask .|. shiftMask , xK_r ), spawn $ "xmonad --recompile && xmonad --restart")
   , ((modMask .|. shiftMask , xK_q ), kill)
   , ((modMask .|. shiftMask , xK_x ), spawn $ "arcolinux-powermenu")
@@ -185,7 +199,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((controlMask .|. mod1Mask , xK_i ), spawn $ "nitrogen")
   , ((controlMask .|. mod1Mask , xK_k ), spawn $ "archlinux-logout")
   , ((controlMask .|. mod1Mask , xK_l ), spawn $ "archlinux-logout")
-  , ((controlMask .|. mod1Mask , xK_m ), spawn $ "xfce4-settings-manager")
+  --, ((controlMask .|. mod1Mask , xK_m ), spawn $ "xfce4-settings-manager")
   , ((controlMask .|. mod1Mask , xK_o ), spawn $ "$HOME/.xmonad/scripts/picom-toggle.sh")
   , ((controlMask .|. mod1Mask , xK_p ), spawn $ "pamac-manager")
   , ((controlMask .|. mod1Mask , xK_r ), spawn $ "rofi-theme-selector")
@@ -293,7 +307,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask, xK_k), windows W.focusUp  )
 
   -- Move focus to the master window.
-  , ((modMask .|. shiftMask, xK_m), windows W.focusMaster  )
+  --, ((modMask .|. shiftMask, xK_m), windows W.focusMaster)
 
   -- Swap the focused window with the next window.
   , ((modMask .|. shiftMask, xK_j), windows W.swapDown  )
