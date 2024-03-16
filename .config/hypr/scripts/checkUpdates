@@ -1,0 +1,9 @@
+updates=$(checkupdates | wc -l);
+state=$(echo \"good\");
+if [ $(echo $updates) -gt 0 ]; then 
+	state=$(echo \"warning\");
+fi;
+if [ $(echo $updates) -gt 10 ]; then 
+	state=$(echo \"critical\");
+fi;
+printf \{\"text\":\"$(echo $updates)\",\"class\":$(echo $state)\}
